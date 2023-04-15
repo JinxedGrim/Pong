@@ -16,7 +16,7 @@ int main()
     HBRUSH ClearBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     // Create Overlay
-    WndCreator Window = WndCreator(CS_CLASSDC, GetModuleHandle(NULL), L"Mouse ESP", ClearBrush, 0, WS_POPUP | WS_VISIBLE, 0, 0, sx, sy);
+    WndCreator Window = WndCreator(CS_CLASSDC, GetModuleHandle(NULL), L"Mouse ESP", LoadCursorW(NULL, IDC_ARROW), ClearBrush, 0, WS_POPUP | WS_VISIBLE, 0, 0, sx, sy);
 
     // Create gdi Object
     GdiPP Gdi = GdiPP(Window.Wnd, true);
@@ -136,12 +136,13 @@ int main()
             {
                 Player1Score++;
                 BallX = PlayerWidth;
+                Bounces++;
             }
             else
             {
                 Player1Score--;
+                Bounces++;
             }
-            Bounces++;
             Vx *= -1;
         }
         if (((BallX >= Player2X - PlayerWidth) && BallY >= Player2Y && BallY <= Player2Y + PlayerHeight) || BallX >= MaxX)
@@ -150,25 +151,27 @@ int main()
             {
                 Player2Score++;
                 BallX = Player2X - PlayerWidth;
+                Bounces++;
             }
             else
             {
                 Player2Score--;
+                Bounces++;
             }
             Vx *= -1;
             Bounces++;
         }
 
-        if (Bounces == BouncesTillIncrease)
+        if (Bounces == BouncesTillIncrease && !(MaxSpeed < abs(Vx)))
         {
-            if (Vx <= 0 && (Vx < 3 && Vx > -3))
+            if (Vx < 0 && Vx > -3)
                 Vx -= 1;
-            else
+            else if((Vx > 0 && Vx < 3))
                 Vx += 1;
 
-            if (Vy <= 0 && (Vy < 3 && Vy > -3))
+            if (Vy < 0 && Vy > -3)
                 Vy -= 1;
-            else
+            else if (Vy > 0 && Vy < 3)
                 Vy += 1;
 
             Bounces = 0;
@@ -177,6 +180,8 @@ int main()
         // Init Strings
         std::string P1Str = std::to_string(Player1Score);
         std::string P2Str = std::to_string(Player2Score);
+        //std::string sxstr = "SpeedX: " + std::to_string(Vx);
+        //std::string systr = "SpeedY: " + std::to_string(Vy);
 
         // Clear Screen
         Gdi.Clear(GDIPP_FILLRECT, ClearBrush);
@@ -187,6 +192,8 @@ int main()
         Gdi.ChangePen(CurrentPen);
         Gdi.DrawStringA(sx / 2 - 50, 50, P1Str, RGB(R, G, B), TRANSPARENT);
         Gdi.DrawStringA(sx / 2 + 50, 50, P2Str, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
         Gdi.DrawRectangle(Player1X, Player1Y, PlayerWidth, PlayerHeight);
         Gdi.DrawRectangle(Player2X, Player2Y, PlayerWidth, PlayerHeight);
         Gdi.DrawEllipse(BallX, BallY, BallWidth, BallHeight);

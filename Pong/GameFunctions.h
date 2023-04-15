@@ -11,8 +11,9 @@ int Vx = 1;
 int Vy = 1;
 int BallWidth = 15;
 int BallHeight = 15;
-int Bounces = 10;
-const int BouncesTillIncrease = 1;
+int Bounces = 0;
+int MaxSpeed = 2;
+const int BouncesTillIncrease = 5;
 
 int BallX = sx / 2 - (BallWidth / 2);
 int BallY = sy / 2 - (BallHeight / 2);
