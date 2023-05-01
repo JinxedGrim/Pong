@@ -150,7 +150,16 @@
     <ClCompile Include="Pong.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\My Librarys\Graphics\GdiPP.hpp" />
+    <ClInclude Include="..\..\..\My Librarys\Graphics\WndCreator.hpp" />
     <ClInclude Include="GameFunctions.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Pong.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Icon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

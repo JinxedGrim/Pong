@@ -6,6 +6,7 @@
 
 int sx = GetSystemMetrics(SM_CXSCREEN);
 int sy = GetSystemMetrics(SM_CYSCREEN);
+bool Fs = false;
 
 int Vx = 1;
 int Vy = 1;
