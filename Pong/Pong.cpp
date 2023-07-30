@@ -19,7 +19,7 @@ int main()
     HBRUSH ClearBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     // Create Overlay
-    WndCreator Window = WndCreator(CS_OWNDC, L"Pong", L"Pong By JinxedGrim", LoadCursor(NULL, IDC_ARROW), NULL, ClearBrush, WndExModes::BorderLessEx, WndModes::BorderLess | WndModes::ClipChildren, 0, 0, sx, sy);
+    WndCreator Window = WndCreator(CS_OWNDC, L"Pong", L"Pong By JinxedGrim", LoadCursor(NULL, IDC_ARROW), NULL, ClearBrush, WndExModes::BorderLessEx, WndModes::BorderLess, 0, 0, sx, sy);
 
     // Create gdi Object
     GdiPP Gdi = GdiPP(Window.Wnd, true);
