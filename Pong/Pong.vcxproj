@@ -152,6 +152,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\My Librarys\Graphics\GdiPP.hpp" />
     <ClInclude Include="..\..\..\My Librarys\Graphics\WndCreator.hpp" />
+    <ClInclude Include="..\..\..\My Librarys\Networking\NetPP.h" />
     <ClInclude Include="GameFunctions.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

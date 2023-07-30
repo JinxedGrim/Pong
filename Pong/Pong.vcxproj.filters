@@ -32,6 +32,9 @@
     <ClInclude Include="..\..\..\My Librarys\Graphics\WndCreator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\My Librarys\Networking\NetPP.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Pong.rc">
