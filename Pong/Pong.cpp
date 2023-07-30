@@ -19,7 +19,7 @@ int main()
     HBRUSH ClearBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
 
     // Create Overlay
-    WndCreator Window = WndCreator(CS_CLASSDC, L"Pong by JinxedGrim", LoadCursorW(NULL, IDC_ARROW), ICO.GetHICON(), ClearBrush, WndExModes::BorderLessEx, WndModes::BorderLess, 0, 0, sx, sy);
+    WndCreator Window = WndCreator(CS_OWNDC, L"Pong", L"Pong By JinxedGrim", LoadCursor(NULL, IDC_ARROW), NULL, ClearBrush, WndExModes::BorderLessEx, WndModes::BorderLess | WndModes::ClipChildren, 0, 0, sx, sy);
 
     // Create gdi Object
     GdiPP Gdi = GdiPP(Window.Wnd, true);
@@ -35,8 +35,8 @@ int main()
     Gdi.ChangeBrush(CurrentBrush);
 
     Gdi.UpdateClientRgn();
-    sx = Window.GetClientArea().x;
-    sy = Window.GetClientArea().y;
+    sx = Window.GetClientArea().Width;
+    sy = Window.GetClientArea().Height;
 
     // Init Variables
     MSG msg = { 0 };
@@ -105,16 +105,16 @@ int main()
                 Window.ResetStyle(WndModes::Windowed);
                 Window.ResetStyleEx(WndExModes::WindowedEx);
                 Gdi.UpdateClientRgn();
-                sx = Window.GetClientArea().x;
-                sy = Window.GetClientArea().y;
+                sx = Window.GetClientArea().Width;
+                sy = Window.GetClientArea().Height;
             }
             else
             {
                 Window.ResetStyle(WndModes::BorderLess);
                 Window.ResetStyleEx(WndExModes::BorderLessEx);
                 Gdi.UpdateClientRgn();
-                sx = Window.GetClientArea().x;
-                sy = Window.GetClientArea().y;
+                sx = Window.GetClientArea().Width;
+                sy = Window.GetClientArea().Height;
             }
             Fs = !Fs;
         }
