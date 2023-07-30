@@ -38,11 +38,15 @@ int main()
     sx = Window.GetClientArea().Width;
     sy = Window.GetClientArea().Height;
 
+    auto LastTime = std::chrono::system_clock::now();
+    double DeltaTime = 0.0f;
+
     // Init Variables
     MSG msg = { 0 };
 
     while (!GetAsyncKeyState(VK_RETURN))
     {
+        LastTime = std::chrono::system_clock::now();
         // Translate and Dispatch message to WindowProc
         PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE);
 
@@ -59,36 +63,71 @@ int main()
         // Ball Movement
         if (!Paused)
         {
-            BallX += Vx;
-            BallY += Vy;
-        }
+            BallSubX += Vx * DeltaTime; // New var used for sub pixel moving
+            BallSubY += Vy * DeltaTime;
 
-        // Out Of Bounds Y Detetcion
-        if (BallY >= sy || BallY <= 0)
-        {
-            Vy *= -1;
+            int BallMoveX = static_cast<int>(BallSubX + 0.5f);
+            int BallMoveY = static_cast<int>(BallSubY + 0.5f);
+
+            BallX += BallMoveX;
+            BallY += BallMoveY;
+
+            BallSubX -= BallMoveX;
+            BallSubY -= BallMoveY;
         }
 
         // Controls
         if (GetAsyncKeyState(VK_DOWN))
         {
             if (Player2Y + PlayerHeight < sy)
-                Player2Y += 5;
+            {
+                Player2SubY += PlayerVelocity * DeltaTime;
+
+                int Player2MoveY = static_cast<int>(Player2SubY + 0.5f);
+
+                Player2Y += Player2MoveY;
+
+                Player2SubY -= Player2MoveY;
+            }
         }
         if (GetAsyncKeyState(VK_UP))
         {
             if (Player2Y > 0)
-                Player2Y -= 5;
+            {
+                Player2SubY += PlayerVelocity * DeltaTime;
+
+                int Player2MoveY = static_cast<int>(Player2SubY + 0.5f);
+
+                Player2Y -= Player2MoveY;
+
+                Player2SubY -= Player2MoveY;
+            }
         }
         if (GetAsyncKeyState(0x53))
         {
             if (Player1Y + PlayerHeight < sy)
-                Player1Y += 5;
+            {
+                Player1SubY += PlayerVelocity * DeltaTime;
+
+                int Player1MoveY = static_cast<int>(Player1SubY + 0.5f);
+
+                Player1Y += Player1MoveY;
+
+                Player1SubY -= Player1MoveY;
+            }
         }
         if (GetAsyncKeyState(0x57))
         {
             if (Player1Y > 0)
-                Player1Y -= 5;
+            {
+                Player1SubY += PlayerVelocity * DeltaTime;
+
+                int Player1MoveY = static_cast<int>(Player1SubY + 0.5f);
+
+                Player1Y -= Player1MoveY;
+
+                Player1SubY -= Player1MoveY;
+            }
         }
 
         // Reset Score
@@ -160,75 +199,38 @@ int main()
             Gdi.ChangeBrush(CurrentBrush);
         }
 
-        // Collision Detetction && Scoring
-        if (((BallX <= PlayerWidth) && BallY >= Player1Y && BallY <= Player1Y + PlayerHeight) || BallX <= 0)
-        {
-            if (BallY >= Player1Y && BallY <= Player1Y + PlayerHeight)
-            {
-                Player1Score++;
-                BallX = PlayerWidth;
-                Bounces++;
-            }
-            else
-            {
-                Player1Score--;
-                Bounces++;
-            }
-            Vx *= -1;
-        }
-        if (((BallX >= Player2X - PlayerWidth) && BallY >= Player2Y && BallY <= Player2Y + PlayerHeight) || BallX >= MaxX)
-        {
-            if (BallY >= Player2Y && BallY <= Player2Y + PlayerHeight)
-            {
-                Player2Score++;
-                BallX = Player2X - PlayerWidth;
-                Bounces++;
-            }
-            else
-            {
-                Player2Score--;
-                Bounces++;
-            }
-            Vx *= -1;
-            Bounces++;
-        }
-
-        if (Bounces == BouncesTillIncrease && !(MaxSpeed < abs(Vx)))
-        {
-            if (Vx < 0 && Vx > -3)
-                Vx -= 1;
-            else if((Vx > 0 && Vx < 3))
-                Vx += 1;
-
-            if (Vy < 0 && Vy > -3)
-                Vy -= 1;
-            else if (Vy > 0 && Vy < 3)
-                Vy += 1;
-
-            Bounces = 0;
-        }
+        // Collision Detetction && Scoring && Speed
+        CollisionDetection();
 
         // Init Strings
-        std::string P1Str = std::to_string(Player1Score);
-        std::string P2Str = std::to_string(Player2Score);
-        //std::string sxstr = "SpeedX: " + std::to_string(Vx);
-        //std::string systr = "SpeedY: " + std::to_string(Vy);
+        std::string P1ScoreStr = std::to_string(Player1Score);
+        std::string P2ScoreStr = std::to_string(Player2Score);
+        std::string P1NameStr = "Player 1";
+        std::string P2NameStr = "Player 2";
+        std::string sxstr = "SpeedX: " + std::to_string(Vx);
+        std::string systr = "SpeedY: " + std::to_string(Vy);
 
         // Clear Screen
         Gdi.Clear(GDIPP_FILLRECT, ClearBrush);
+
+        // Helpful debug lines
+        //Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
+        //Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
 
         // Draw Game
         Gdi.ChangePen(DashedPen);
         Gdi.DrawLine(sx / 2, 0, sx / 2, sy);
         Gdi.ChangePen(CurrentPen);
-        Gdi.DrawStringA(sx / 2 - 50, 50, P1Str, RGB(R, G, B), TRANSPARENT);
-        Gdi.DrawStringA(sx / 2 + 50, 50, P2Str, RGB(R, G, B), TRANSPARENT);
-        //Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
-        //Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(sx / 2 - 150, 50, P1NameStr, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(sx / 2 + 100, 50, P2NameStr, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(sx / 2 - 50, 50, P1ScoreStr, RGB(R, G, B), TRANSPARENT);
+        Gdi.DrawStringA(sx / 2 + 50, 50, P2ScoreStr, RGB(R, G, B), TRANSPARENT);
         Gdi.DrawRectangle(Player1X, Player1Y, PlayerWidth, PlayerHeight);
         Gdi.DrawRectangle(Player2X, Player2Y, PlayerWidth, PlayerHeight);
         Gdi.DrawEllipse(BallX, BallY, BallWidth, BallHeight);
         Gdi.DrawDoubleBuffer();
+
+        DeltaTime = std::chrono::duration<double>(std::chrono::system_clock::now() - LastTime).count();
     }
 
     Setting.detach();
