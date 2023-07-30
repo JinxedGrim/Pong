@@ -44,7 +44,7 @@ int main()
     while (!GetAsyncKeyState(VK_RETURN))
     {
         // Translate and Dispatch message to WindowProc
-        PeekMessageW(&msg, Window.Wnd, 0, 0, PM_REMOVE);
+        PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE);
 
         // Translate and Dispatch message to WindowProc
         TranslateMessage(&msg);
