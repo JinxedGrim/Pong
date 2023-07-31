@@ -18,14 +18,32 @@ int main()
     int choice = 0;
     std::cout << "Would you like to (1) host a session or (2) connect to a host?" << std::endl;
     std::cin >> choice;
-
+    
     if (choice == 1)
     {
         // start host
-        std::cout << "Waiting for a client. Press escape to cancel and quit." << std::endl;
-
         NetPP Server = NetPP(true, false, Port);
         Server.StartListening();
+
+        char LIPBuff[1024];
+        if (gethostname(LIPBuff, sizeof(LIPBuff)) == SOCKET_ERROR)
+        {
+            ZeroMemory(LIPBuff, 1024);
+
+            strcpy_s(LIPBuff, "Can't retrieve");
+        }
+        else
+        {
+            hostent* record = gethostbyname(LIPBuff);
+            if (record == NULL)
+            {
+                strcpy_s(LIPBuff, "Can't retrieve");
+            }
+
+            in_addr* address = (in_addr*)record->h_addr;
+            strcpy_s(LIPBuff, inet_ntoa(*address));
+        }
+        std::cout << "Waiting for a client to connect to your IP (local = " << LIPBuff << ") or your public IP" << ".Press escape to cancel and quit." << std::endl;
 
         while (!GetAsyncKeyState(VK_ESCAPE))
         {
@@ -64,11 +82,15 @@ int main()
         sx = Window.GetClientArea().Width;
         sy = Window.GetClientArea().Height;
 
+        auto LastTime = std::chrono::system_clock::now();
+        double DeltaTime = 0.0f;
+
         // Init Variables
         MSG msg = { 0 };
 
         while (!GetAsyncKeyState(VK_BACK))
         {
+            LastTime = std::chrono::system_clock::now();
             // Translate and Dispatch message to WindowProc
             PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE);
 
@@ -97,25 +119,45 @@ int main()
             // Ball Movement
             if (!Paused)
             {
-                BallX += Vx;
-                BallY += Vy;
-            }
+                BallSubX += Vx * DeltaTime; // New var used for sub pixel moving
+                BallSubY += Vy * DeltaTime;
 
-            // Out Of Bounds Y Detetcion
-            if (BallY >= sy || BallY <= 0)
-            {
-                Vy *= -1;
+                int BallMoveX = static_cast<int>(BallSubX + 0.5f);
+                int BallMoveY = static_cast<int>(BallSubY + 0.5f);
+
+                BallX += BallMoveX;
+                BallY += BallMoveY;
+
+                BallSubX -= BallMoveX;
+                BallSubY -= BallMoveY;
             }
 
             if (GetAsyncKeyState(0x53))
             {
                 if (Player1Y + PlayerHeight < sy)
-                    Player1Y += 5;
+                {
+                    Player1SubY += PlayerVelocity * DeltaTime;
+
+                    int Player1MoveY = static_cast<int>(Player1SubY + 0.5f);
+
+                    Player1Y += Player1MoveY;
+
+                    Player1SubY -= Player1MoveY;
+                }
             }
+
             if (GetAsyncKeyState(0x57))
             {
                 if (Player1Y > 0)
-                    Player1Y -= 5;
+                {
+                    Player1SubY += PlayerVelocity * DeltaTime;
+
+                    int Player1MoveY = static_cast<int>(Player1SubY + 0.5f);
+
+                    Player1Y -= Player1MoveY;
+
+                    Player1SubY -= Player1MoveY;
+                }
             }
 
             // Reset Score
@@ -187,62 +229,21 @@ int main()
                 Gdi.ChangeBrush(CurrentBrush);
             }
 
-            // Collision Detetction && Scoring
-            if (((BallX <= PlayerWidth) && BallY >= Player1Y && BallY <= Player1Y + PlayerHeight) || BallX <= 0)
-            {
-                if (BallY >= Player1Y && BallY <= Player1Y + PlayerHeight)
-                {
-                    Player1Score++;
-                    BallX = PlayerWidth;
-                    Bounces++;
-                }
-                else
-                {
-                    Player1Score--;
-                    Bounces++;
-                }
-                Vx *= -1;
-            }
-            if (((BallX >= Player2X - PlayerWidth) && BallY >= Player2Y && BallY <= Player2Y + PlayerHeight) || BallX >= MaxX)
-            {
-                if (BallY >= Player2Y && BallY <= Player2Y + PlayerHeight)
-                {
-                    Player2Score++;
-                    BallX = Player2X - PlayerWidth;
-                    Bounces++;
-                }
-                else
-                {
-                    Player2Score--;
-                    Bounces++;
-                }
-                Vx *= -1;
-                Bounces++;
-            }
-
-            if (Bounces == BouncesTillIncrease && !(MaxSpeed < abs(Vx)))
-            {
-                if (Vx < 0 && Vx > -3)
-                    Vx -= 1;
-                else if ((Vx > 0 && Vx < 3))
-                    Vx += 1;
-
-                if (Vy < 0 && Vy > -3)
-                    Vy -= 1;
-                else if (Vy > 0 && Vy < 3)
-                    Vy += 1;
-
-                Bounces = 0;
-            }
+            CollisionDetection();
 
             // Init Strings
             std::string P1Str = std::to_string(Player1Score);
             std::string P2Str = std::to_string(Player2Score);
+            std::string P1NameStr = "You";
+            std::string P2NameStr = "Player 2";
             //std::string sxstr = "SpeedX: " + std::to_string(Vx);
             //std::string systr = "SpeedY: " + std::to_string(Vy);
 
             // Clear Screen
             Gdi.Clear(GDIPP_FILLRECT, ClearBrush);
+
+            //Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
+            //Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
 
             // Draw Game
             Gdi.ChangePen(DashedPen);
@@ -250,12 +251,14 @@ int main()
             Gdi.ChangePen(CurrentPen);
             Gdi.DrawStringA(sx / 2 - 50, 50, P1Str, RGB(R, G, B), TRANSPARENT);
             Gdi.DrawStringA(sx / 2 + 50, 50, P2Str, RGB(R, G, B), TRANSPARENT);
-            //Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
-            //Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
+            Gdi.DrawStringA(sx / 2 - 150, 50, P1NameStr, RGB(R, G, B), TRANSPARENT);
+            Gdi.DrawStringA(sx / 2 + 100, 50, P2NameStr, RGB(R, G, B), TRANSPARENT);
             Gdi.DrawRectangle(Player1X, Player1Y, PlayerWidth, PlayerHeight);
             Gdi.DrawRectangle(Player2X, Player2Y, PlayerWidth, PlayerHeight);
             Gdi.DrawEllipse(BallX, BallY, BallWidth, BallHeight);
             Gdi.DrawDoubleBuffer();
+
+            DeltaTime = std::chrono::duration<double>(std::chrono::system_clock::now() - LastTime).count();
         }
 
         Setting.detach();
@@ -264,7 +267,12 @@ int main()
     }
     else
     {
-        NetPP Net = NetPP(false, false, Port);
+        std::string IPV4 = "";
+
+        std::cout << "Enter the IP of the server you'd like to connect to: ";
+        std::cin >> IPV4;
+
+        NetPP Net = NetPP(false, false, Port, IPV4);
 
         Cmd.Hide();
 
@@ -293,11 +301,15 @@ int main()
         sx = Window.GetClientArea().Width;
         sy = Window.GetClientArea().Height;
 
+        auto LastTime = std::chrono::system_clock::now();
+        double DeltaTime = 0.0f;
+
         // Init Variables
         MSG msg = { 0 };
 
         while (!GetAsyncKeyState(VK_BACK))
         {
+            LastTime = std::chrono::system_clock::now();
             // Translate and Dispatch message to WindowProc
             PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE);
 
@@ -331,13 +343,30 @@ int main()
             if (GetAsyncKeyState(VK_DOWN))
             {
                 if (Player2Y + PlayerHeight < sy)
-                    Player2Y += 5;
+                {
+                    Player2SubY += PlayerVelocity * DeltaTime;
+
+                    int Player2MoveY = static_cast<int>(Player2SubY + 0.5f);
+
+                    Player2Y += Player2MoveY;
+
+                    Player2SubY -= Player2MoveY;
+                }
             }
             if (GetAsyncKeyState(VK_UP))
             {
                 if (Player2Y > 0)
-                    Player2Y -= 5;
+                {
+                    Player2SubY += PlayerVelocity * DeltaTime;
+
+                    int Player2MoveY = static_cast<int>(Player2SubY + 0.5f);
+
+                    Player2Y -= Player2MoveY;
+
+                    Player2SubY -= Player2MoveY;
+                }
             }
+
 
             int SendBuff[1] = { Player2Y };
             Net.SendToClient(Net.ClientSocket, SendBuff, sizeof(SendBuff));
@@ -407,8 +436,8 @@ int main()
             // Init Strings
             std::string P1Str = std::to_string(Player1Score);
             std::string P2Str = std::to_string(Player2Score);
-            //std::string sxstr = "SpeedX: " + std::to_string(Vx);
-            //std::string systr = "SpeedY: " + std::to_string(Vy);
+            std::string P1NameStr = "Player 2";
+            std::string P2NameStr = "You";
 
             // Clear Screen
             Gdi.Clear(GDIPP_FILLRECT, ClearBrush);
@@ -419,12 +448,14 @@ int main()
             Gdi.ChangePen(CurrentPen);
             Gdi.DrawStringA(sx / 2 - 50, 50, P1Str, RGB(R, G, B), TRANSPARENT);
             Gdi.DrawStringA(sx / 2 + 50, 50, P2Str, RGB(R, G, B), TRANSPARENT);
-            //Gdi.DrawStringA(20, 20, sxstr, RGB(R, G, B), TRANSPARENT);
-            //Gdi.DrawStringA(20, 40, systr, RGB(R, G, B), TRANSPARENT);
+            Gdi.DrawStringA(sx / 2 - 150, 50, P1NameStr, RGB(R, G, B), TRANSPARENT);
+            Gdi.DrawStringA(sx / 2 + 100, 50, P2NameStr, RGB(R, G, B), TRANSPARENT);
             Gdi.DrawRectangle(Player1X, Player1Y, PlayerWidth, PlayerHeight);
             Gdi.DrawRectangle(Player2X, Player2Y, PlayerWidth, PlayerHeight);
             Gdi.DrawEllipse(BallX, BallY, BallWidth, BallHeight);
             Gdi.DrawDoubleBuffer();
+
+            DeltaTime = std::chrono::duration<double>(std::chrono::system_clock::now() - LastTime).count();
         }
 
         Setting.detach();
